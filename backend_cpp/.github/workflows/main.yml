@@ -1,0 +1,37 @@
+name: C++ 引擎跨平台自动化构建
+
+on:
+  push:
+    branches: [ main, master ]
+  pull_request:
+    branches: [ main, master ]
+
+jobs:
+  build:
+    name: 构建于 ${{ matrix.os }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: [ubuntu-latest, windows-latest]
+
+    steps:
+    - name: 检出代码
+      uses: actions/checkout@v3
+
+    - name: 配置 CMake
+      run: cmake -B ${{github.workspace}}/build -DCMAKE_BUILD_TYPE=Release
+
+    - name: 执行编译
+      run: cmake --build ${{github.workspace}}/build --config Release
+
+    # 🌟 针对 Linux 系统的专属测试指令
+    - name: 运行单元测试 (Linux)
+      if: matrix.os == 'ubuntu-latest'
+      working-directory: ${{github.workspace}}/build
+      run: ./graph_engine run_test
+
+    # 🌟 针对 Windows 系统的专属测试指令 (注意路径和后缀)
+    - name: 运行单元测试 (Windows)
+      if: matrix.os == 'windows-latest'
+      working-directory: ${{github.workspace}}/build
+      run: .\Release\graph_engine.exe run_test

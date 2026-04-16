@@ -1,0 +1,15 @@
+# 编译生成的文件和目录
+build/
+cmake-build-debug/
+cmake-build-release/
+*.exe
+*.o
+*.obj
+*.pdb
+
+# IDE 配置文件 (比如 CLion)
+.idea/
+
+# 运行产生的临时测试数据
+temp_graph_output.json
+test_output.txt
