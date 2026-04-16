@@ -18,20 +18,24 @@ jobs:
     - name: 检出代码
       uses: actions/checkout@v3
 
+    # 🌟 告诉云端服务器：进到 backend_cpp 文件夹里去配置
     - name: 配置 CMake
-      run: cmake -B ${{github.workspace}}/build -DCMAKE_BUILD_TYPE=Release
+      working-directory: ./backend_cpp
+      run: cmake -B build -DCMAKE_BUILD_TYPE=Release
 
+    # 🌟 告诉云端服务器：进到 backend_cpp 文件夹里去编译
     - name: 执行编译
-      run: cmake --build ${{github.workspace}}/build --config Release
+      working-directory: ./backend_cpp
+      run: cmake --build build --config Release
 
-    # 🌟 针对 Linux 系统的专属测试指令
+    # 🌟 Linux 环境测试路径
     - name: 运行单元测试 (Linux)
       if: matrix.os == 'ubuntu-latest'
-      working-directory: ${{github.workspace}}/build
+      working-directory: ./backend_cpp/build
       run: ./graph_engine run_test
 
-    # 🌟 针对 Windows 系统的专属测试指令 (注意路径和后缀)
+    # 🌟 Windows 环境测试路径
     - name: 运行单元测试 (Windows)
       if: matrix.os == 'windows-latest'
-      working-directory: ${{github.workspace}}/build
+      working-directory: ./backend_cpp/build
       run: .\Release\graph_engine.exe run_test
