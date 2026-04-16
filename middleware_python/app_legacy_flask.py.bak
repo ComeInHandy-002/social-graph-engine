@@ -1,0 +1,39 @@
+from flask import Flask, request, jsonify
+from flask_cors import CORS
+from utils.cpp_runner import run_graph_engine
+
+app = Flask(__name__)
+CORS(app) 
+
+# 原来的 BFS 接口
+@app.route('/api/shortest_path', methods=['GET'])
+def get_shortest_path():
+    source = request.args.get('source')
+    target = request.args.get('target')
+    if not source or not target:
+        return jsonify({"status": "error", "message": "缺少参数"}), 400
+        
+    result = run_graph_engine("bfs", source, target)
+    return jsonify(result)
+
+# 新增的 PageRank 接口
+@app.route('/api/pagerank', methods=['GET'])
+def get_pagerank():
+    result = run_graph_engine("pagerank")
+    return jsonify(result)
+
+# 新增的社区发现接口
+@app.route('/api/community', methods=['GET'])
+def get_community():
+    result = run_graph_engine("community")
+    return jsonify(result)
+
+@app.route('/api/full_graph', methods=['GET'])
+def get_full_graph():
+    # 告诉 C++：把整个 data.txt 里的结构都给我吐出来
+    result = run_graph_engine("get_full_graph")
+    return jsonify(result)
+
+if __name__ == '__main__':
+    print("🚀 API 服务启动！")
+    app.run(host='0.0.0.0', port=5000, debug=True)

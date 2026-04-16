@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+
+<head>
+  <meta charset="UTF-8">
+  <title>SocialGraph Pro | 社交网络可视分析中枢</title>
+  <link rel="stylesheet" href="css/style.css">
+  <script src="https://unpkg.com/3d-force-graph"></script>
+</head>
+
+<body>
+  <div id="loading-screen">
+    <div class="spinner"></div>
+    <div id="loading-text">系统休眠中...</div>
+  </div>
+
+  <div id="side-bar">
+    <h3>🌌 社交引擎控制台</h3>
+    <button class="btn-load" id="btn-load">⚡ 载入核心数据集</button>
+
+    <div class="stat-panel">
+      <div class="stat-item">
+        <div class="stat-value" id="stat-nodes">0</div>
+        <div class="stat-label">网络节点</div>
+      </div>
+      <div class="stat-item">
+        <div class="stat-value" id="stat-edges">0</div>
+        <div class="stat-label">关联边缘</div>
+      </div>
+    </div>
+
+    <div class="input-group">
+      <input id="s" placeholder="起点 ID"> <span style="color:#555">➔</span> <input id="t" placeholder="终点 ID">
+    </div>
+    <button id="btn-path">🎯 追踪最短通信链路</button>
+    <button class="btn-reset" id="btn-reset">🌍 恢复全景视角</button>
+    <button class="btn-danger" id="btn-toggle-links">👁️ 隐藏全网连线 (极度流畅)</button>
+
+    <hr style="border:0; border-top:1px solid rgba(255,255,255,0.1); margin: 15px 0;">
+
+    <h4 style="color: #00ccff; margin-bottom: 0;">🎛️ 物理力场引擎</h4>
+    <div class="slider-group">
+      <label>星系斥力 (Repel): <span id="val-repel">30</span></label>
+      <input type="range" id="ctrl-repel" min="0" max="150" value="30">
+    </div>
+    <div class="slider-group">
+      <label>社交张力 (Link): <span id="val-link">30</span></label>
+      <input type="range" id="ctrl-link" min="10" max="150" value="30">
+    </div>
+
+    <hr style="border:0; border-top:1px solid rgba(255,255,255,0.1); margin: 15px 0;">
+
+    <h4>👑 影响力排行 (Top 15)</h4>
+    <div id="rank-list">
+      <div style="color:#666; text-align:center; margin-top:10px; font-size:12px;">等待载入...</div>
+    </div>
+  </div>
+
+  <div id="graph"></div>
+  <div id="path-hud"></div>
+
+  <script type="module" src="js/app.js"></script>
+</body>
+
+</html>

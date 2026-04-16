@@ -1,0 +1,364 @@
+ /* ================= 基础与背景 ================= */
+ body {
+     margin: 0;
+     background: radial-gradient(circle at center, #0a0a1a 0%, #000005 100%);
+     color: #eee;
+     font-family: 'Segoe UI', Tahoma, sans-serif;
+     overflow: hidden;
+ }
+
+ /* ================= 炫酷加载遮罩层 ================= */
+ #loading-screen {
+     position: fixed;
+     top: 0;
+     left: 0;
+     width: 100%;
+     height: 100%;
+     background: rgba(0, 0, 0, 0.9);
+     z-index: 9999;
+     display: flex;
+     flex-direction: column;
+     justify-content: center;
+     align-items: center;
+     transition: opacity 0.5s;
+     display: none;
+ }
+
+ .spinner {
+     width: 50px;
+     height: 50px;
+     border: 3px solid rgba(0, 255, 136, 0.3);
+     border-top-color: #00ff88;
+     border-radius: 50%;
+     animation: spin 1s linear infinite;
+     margin-bottom: 20px;
+ }
+
+ @keyframes spin {
+     to {
+         transform: rotate(360deg);
+     }
+ }
+
+ #loading-text {
+     color: #00ff88;
+     font-size: 18px;
+     letter-spacing: 2px;
+     text-align: center;
+     line-height: 1.5;
+ }
+
+ /* ================= 左侧赛博朋克控制台 ================= */
+ #side-bar {
+     position: absolute;
+     left: 20px;
+     top: 20px;
+     bottom: 20px;
+     width: 320px;
+     background: rgba(15, 15, 25, 0.6);
+     backdrop-filter: blur(15px);
+     -webkit-backdrop-filter: blur(15px);
+     padding: 20px;
+     z-index: 100;
+     border: 1px solid rgba(0, 255, 136, 0.2);
+     border-radius: 15px;
+     box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5), inset 0 0 20px rgba(0, 255, 136, 0.05);
+     display: flex;
+     flex-direction: column;
+     overflow-y: auto;
+ }
+
+ #side-bar::-webkit-scrollbar {
+     width: 4px;
+ }
+
+ #side-bar::-webkit-scrollbar-thumb {
+     background: rgba(0, 255, 136, 0.3);
+ }
+
+ h3,
+ h4 {
+     margin-top: 0;
+     color: #fff;
+     text-shadow: 0 0 10px rgba(0, 255, 136, 0.5);
+     font-weight: 600;
+     letter-spacing: 1px;
+ }
+
+ h3 {
+     border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+     padding-bottom: 15px;
+     margin-bottom: 20px;
+ }
+
+ /* 数据统计面板 */
+ .stat-panel {
+     display: flex;
+     justify-content: space-between;
+     background: rgba(0, 0, 0, 0.4);
+     border-radius: 8px;
+     padding: 10px;
+     margin-bottom: 15px;
+     border: 1px solid rgba(255, 255, 255, 0.05);
+ }
+
+ .stat-item {
+     text-align: center;
+ }
+
+ .stat-value {
+     font-size: 20px;
+     font-weight: bold;
+     color: #00ff88;
+ }
+
+ .stat-label {
+     font-size: 12px;
+     color: #888;
+     margin-top: 5px;
+ }
+
+ /* 输入框与按钮美化 */
+ .input-group {
+     display: flex;
+     gap: 8px;
+     margin-bottom: 15px;
+     align-items: center;
+ }
+
+ input {
+     background: rgba(0, 0, 0, 0.5);
+     border: 1px solid #444;
+     color: #00ff88;
+     padding: 10px;
+     width: 100%;
+     border-radius: 6px;
+     outline: none;
+     transition: 0.3s;
+     font-weight: bold;
+     text-align: center;
+ }
+
+ input:focus {
+     border-color: #00ff88;
+     box-shadow: 0 0 10px rgba(0, 255, 136, 0.3);
+ }
+
+ button {
+     background: linear-gradient(45deg, #0055ff, #0099ff);
+     color: #fff;
+     border: none;
+     padding: 10px;
+     cursor: pointer;
+     width: 100%;
+     border-radius: 6px;
+     font-weight: bold;
+     transition: 0.3s;
+     margin-bottom: 8px;
+ }
+
+ button:hover {
+     box-shadow: 0 0 15px rgba(0, 153, 255, 0.6);
+     transform: translateY(-1px);
+ }
+
+ .btn-load {
+     background: linear-gradient(45deg, #008855, #00cc77);
+     font-size: 16px;
+     padding: 12px;
+ }
+
+ .btn-load:hover {
+     box-shadow: 0 0 15px rgba(0, 204, 119, 0.6);
+ }
+
+ .btn-reset {
+     background: rgba(255, 255, 255, 0.1);
+     border: 1px solid rgba(255, 255, 255, 0.2);
+ }
+
+ .btn-reset:hover {
+     background: rgba(255, 255, 255, 0.2);
+ }
+
+ .btn-danger {
+     background: rgba(255, 50, 50, 0.1);
+     border: 1px solid rgba(255, 50, 50, 0.4);
+     color: #ff8888;
+ }
+
+ /* 🎛️ 力场控制台滑块 */
+ .slider-group {
+     margin-top: 10px;
+ }
+
+ .slider-group label {
+     display: block;
+     font-size: 12px;
+     color: #aaa;
+     margin-bottom: 5px;
+ }
+
+ .slider-group label span {
+     color: #00ff88;
+     font-weight: bold;
+     float: right;
+ }
+
+ input[type=range] {
+     -webkit-appearance: none;
+     width: 100%;
+     background: transparent;
+     outline: none;
+     padding: 0;
+     border: none;
+ }
+
+ input[type=range]::-webkit-slider-thumb {
+     -webkit-appearance: none;
+     height: 14px;
+     width: 14px;
+     border-radius: 50%;
+     background: #00ccff;
+     cursor: pointer;
+     margin-top: -5px;
+     box-shadow: 0 0 10px rgba(0, 204, 255, 0.8);
+ }
+
+ input[type=range]::-webkit-slider-runnable-track {
+     width: 100%;
+     height: 4px;
+     background: rgba(255, 255, 255, 0.1);
+     border-radius: 2px;
+ }
+
+ /* 滚动排行榜 */
+ #rank-list {
+     margin-top: 10px;
+ }
+
+ .rank-item {
+     padding: 10px;
+     margin: 6px 0;
+     background: rgba(0, 0, 0, 0.3);
+     border: 1px solid rgba(255, 255, 255, 0.05);
+     border-radius: 6px;
+     cursor: pointer;
+     display: flex;
+     justify-content: space-between;
+     align-items: center;
+     transition: 0.2s;
+ }
+
+ .rank-item:hover {
+     background: rgba(0, 255, 136, 0.1);
+     border-color: rgba(0, 255, 136, 0.4);
+     transform: translateX(5px);
+ }
+
+ .rank-id {
+     font-size: 13px;
+     color: #ddd;
+ }
+
+ .score {
+     color: #00ff88;
+     font-weight: bold;
+     font-size: 14px;
+ }
+
+ /* ================= 🚀 大屏 HUD 与 悬浮名片 ================= */
+ #path-hud {
+     position: absolute;
+     bottom: 50px;
+     left: 50%;
+     transform: translateX(-50%);
+     background: rgba(10, 15, 30, 0.85);
+     backdrop-filter: blur(20px);
+     -webkit-backdrop-filter: blur(20px);
+     border: 1px solid rgba(255, 0, 68, 0.5);
+     padding: 15px 40px;
+     border-radius: 50px;
+     color: #fff;
+     font-size: 24px;
+     font-weight: bold;
+     display: none;
+     align-items: center;
+     gap: 15px;
+     box-shadow: 0 0 40px rgba(255, 0, 68, 0.4);
+     z-index: 1000;
+     pointer-events: none;
+     animation: popIn 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+ }
+
+ @keyframes popIn {
+     from {
+         opacity: 0;
+         transform: translate(-50%, 50px);
+     }
+
+     to {
+         opacity: 1;
+         transform: translate(-50%, 0);
+     }
+ }
+
+ .hud-title {
+     font-size: 14px;
+     color: #ffaa00;
+     text-transform: uppercase;
+     letter-spacing: 2px;
+ }
+
+ .node-badge {
+     background: linear-gradient(135deg, #ff0044, #aa0022);
+     padding: 8px 15px;
+     border-radius: 30px;
+ }
+
+ .cyber-tooltip {
+     background: rgba(10, 15, 30, 0.85) !important;
+     backdrop-filter: blur(10px);
+     border: 1px solid rgba(0, 255, 136, 0.4);
+     border-radius: 8px;
+     padding: 15px;
+     color: #fff;
+     font-family: sans-serif;
+     box-shadow: 0 5px 25px rgba(0, 255, 136, 0.2);
+     pointer-events: none;
+     min-width: 180px;
+ }
+
+ .cyber-tooltip h4 {
+     margin: 0 0 10px 0;
+     color: #00ff88;
+     border-bottom: 1px solid rgba(0, 255, 136, 0.2);
+     padding-bottom: 8px;
+ }
+
+ .cyber-tooltip p {
+     margin: 6px 0;
+     font-size: 12px;
+     display: flex;
+     justify-content: space-between;
+     align-items: center;
+ }
+
+ .cyber-tooltip .label {
+     color: #aaa;
+ }
+
+ .cyber-tooltip .color-dot {
+     display: inline-block;
+     width: 10px;
+     height: 10px;
+     border-radius: 50%;
+     margin-left: 8px;
+     box-shadow: 0 0 5px currentColor;
+ }
+
+ .scene-tooltip {
+     background: transparent !important;
+     color: inherit !important;
+     padding: 0 !important;
+ }

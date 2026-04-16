@@ -1,0 +1,7 @@
+Flask
+requests
+numpy
+networkx
+matplotlib
+python-dotenv
+flask-cors

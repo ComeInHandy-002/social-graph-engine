@@ -1,0 +1,44 @@
+version: '3.8'
+
+services:
+  cpp-backend:
+    build:
+      context: ./backend_cpp
+      dockerfile: Dockerfile
+    volumes:
+      - ./backend_cpp:/app
+      - ./data:/app/data
+    command: /app/build/SocialNetworkAnalysis
+    environment:
+      - PYTHONUNBUFFERED=1
+    stdin_open: true
+    tty: true
+
+  python-middleware:
+    build:
+      context: ./middleware_python
+      dockerfile: Dockerfile
+    ports:
+      - "5000:5000"
+    volumes:
+      - ./middleware_python:/app
+      - ./data:/app/data
+    depends_on:
+      - cpp-backend
+    environment:
+      - FLASK_ENV=development
+      - FLASK_APP=app.py
+
+  web-frontend:
+    build:
+      context: ./frontend_web
+      dockerfile: Dockerfile
+    ports:
+      - "80:80"
+    volumes:
+      - ./frontend_web:/usr/share/nginx/html
+    depends_on:
+      - python-middleware
+
+volumes:
+  data:
