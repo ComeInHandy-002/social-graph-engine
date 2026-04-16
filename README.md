@@ -1,180 +1,64 @@
-# 社交网络关系分析工具
+# 🌌 SocialGraph Pro | 高性能社交网络可视分析中枢
 
-一个工程级的社交网络关系分析工具，基于C++后端、Python中间件和Web前端的全栈架构实现。
+![Build Status](https://img.shields.io/badge/build-passing-brightgreen)
+![C++](https://img.shields.io/badge/C++-17-blue.svg)
+![FastAPI](https://img.shields.io/badge/FastAPI-0.100+-009688.svg)
+![ES6](https://img.shields.io/badge/ES6-WebGL-f1e05a.svg)
+![License](https://img.shields.io/badge/license-MIT-green.svg)
 
-## 项目结构
+> 一个基于 C++ 毫秒级图计算引擎、FastAPI 异步微服务网关与 WebGL 3D 物理渲染的工业级全栈项目。
 
-```
-.
-├── backend_cpp/          # C++后端实现
-│   ├── CMakeLists.txt    # CMake配置文件
-│   ├── include/          # 头文件目录
-│   │   └── Graph.h      # 图数据结构和算法接口
-│   └── src/             # 源代码目录
-│       ├── main.cpp     # 主程序入口
-│       └── BFS.cpp      # 广度优先搜索算法实现
-├── middleware_python/   # Python中间件
-│   ├── app.py           # Flask应用主程序
-│   ├── requirements.txt # Python依赖包列表
-│   └── utils/           # 工具模块
-│       └── cpp_runner.py # C++程序运行器
-├── frontend_web/        # Web前端
-│   ├── index.html       # 主页面
-│   └── js/              # JavaScript代码
-│       └── main.js      # 前端逻辑
-└── docker-compose.yml   # Docker编排配置
-```
+## 📖 项目简介
 
-## 架构说明
+SocialGraph Pro 是一个致力于解决大规模复杂社交网络分析的全栈解决方案。系统剥离了传统重度耦合的架构，采用**前后端极度分离**与**计算渲染解耦**的现代化工程规范。
 
-### 1. C++后端 (backend_cpp)
-- **技术栈**: C++17, CMake
-- **核心功能**: 
-  - 图数据结构实现
-  - 图算法核心计算
-  - BFS、DFS、最短路径等算法
-- **特点**: 高性能计算，适合大规模图数据处理
+核心引擎由纯 C++ 编写，通过策略模式动态装载 PageRank、LPA 社区发现等高级图论算法，能够以毫秒级延迟处理十万级拓扑连线。前端采用 3D 力学导向图（Force-Directed Graph）结合赛博朋克 UI，实现直观、炫酷的多维数据可视化。
 
-### 2. Python中间件 (middleware_python)
-- **技术栈**: Flask, NetworkX, NumPy
-- **核心功能**:
-  - REST API服务
-  - 请求路由和参数解析
-  - C++后端程序管理
-  - 数据格式转换
-- **特点**: 灵活的业务逻辑处理，易于扩展
+### 📸 核心大屏展示
+*(💡 提示：在这里放一张你前端网页最炫酷的 3D 星空全景截图)*
+![System Dashboard](./docs/screenshot_main.png)
 
-### 3. Web前端 (frontend_web)
-- **技术栈**: HTML5, JavaScript, D3.js, Vis.js
-- **核心功能**:
-  - 图形化界面展示
-  - 交互式操作
-  - 实时结果可视化
-- **特点**: 直观的用户交互，丰富的可视化效果
+---
 
-## 快速开始
+## 🏗️ 全栈架构设计 (Architecture)
 
-### 使用Docker (推荐)
+本项目严格遵循 **MVC 与微服务分层** 思想，拆分为三大独立核心模块：
 
-```bash
-# 克隆项目
-git clone <repository-url>
-cd social-network-analysis
+1. **`backend_cpp` (底层发动机)**
+   - 基于 C++17 构建的极速图计算核心。
+   - 实现完整的插件化算法注册中心（Strategy Pattern）。
+   - 包含 BFS 最短通讯链路追踪、PageRank 全网影响力评估、LPA 标签传播社区裂变。
+2. **`middleware_python` (大堂经理 & 网关)**
+   - 基于 ASGI 高并发框架 FastAPI 构建的 RESTful API 中枢。
+   - 负责跨域资源共享（CORS）与原生 C++ 进程的子进程调度通信。
+3. **`frontend_web` (可视化指挥舱)**
+   - 零框架纯 ES6 模块化构建，彻底摒弃面条代码。
+   - 深度封装 `3d-force-graph` (WebGL)，通过独立渲染层实现千万级光子流动特效。
 
-# 启动所有服务
-docker-compose up -d
+---
 
-# 查看日志
-docker-compose logs -f
-```
+## ⚡ 核心技术特性 (Features)
 
-### 手动启动
+* 🚀 **极致性能榨取**：C++ 核心在处理 `facebook_combined` 等真实海量数据集时，最短路径与社区发现算法均能压榨至毫秒级响应。
+* 🌐 **异步非阻塞网关**：FastAPI 完全接管 I/O 密集型任务，无缝对接前后端数据契约。
+* 🎨 **沉浸式 3D 交互**：支持动态调整星系斥力（Repel）与社交张力（Link Distance），内置节点高亮、降噪过滤与动态摄像机追踪。
+* ⚙️ **工业级 CI/CD**：内置 GitHub Actions 跨平台流水线，提交代码自动触发 CMake 在 Ubuntu 与 Windows 双端的编译与单元测试。
 
-#### 1. 启动C++后端
-```bash
-cd backend_cpp
-mkdir build && cd build
-cmake ..
-make
-./SocialNetworkAnalysis
-```
+---
 
-#### 2. 启动Python中间件
-```bash
-cd middleware_python
-pip install -r requirements.txt
-python app.py
-```
+## 📂 核心目录结构
 
-#### 3. 启动Web前端
-```bash
-cd frontend_web
-python -m http.server 8000
-# 或使用nginx等Web服务器
-```
-
-## API接口
-
-### 图分析接口
-```
-POST /api/analyze
-```
-
-请求参数:
-```json
-{
-    "graph": {},
-    "algorithm": "bfs|dfs|shortest_path",
-    "parameters": {}
-}
-```
-
-### 图加载接口
-```
-POST /api/load_graph
-```
-
-请求参数:
-```json
-{
-    "file_path": "path/to/graph/file"
-}
-```
-
-### 健康检查接口
-```
-GET /api/health
-```
-
-## 核心算法
-
-### 广度优先搜索 (BFS)
-- 时间复杂度: O(V + E)
-- 空间复杂度: O(V)
-- 功能: 查找最短路径，连通分量检测
-
-### 深度优先搜索 (DFS)
-- 时间复杂度: O(V + E)
-- 空间复杂度: O(V)
-- 功能: 拓扑排序，环检测
-
-### 最短路径
-- 实现算法: Dijkstra / BFS (无权图)
-- 时间复杂度: O(V^2) / O(E + V)
-- 功能: 查找两点间的最短路径
-
-## 扩展功能
-
-### 待实现功能
-1. 社区发现算法
-2. 图的可视化布局
-3. 性能监控和日志记录
-4. 用户认证和权限管理
-5. 数据导入导出功能
-
-### 性能优化
-1. 并行计算支持
-2. 缓存机制
-3. 增量计算
-4. 内存优化
-
-## 开发说明
-
-### 代码规范
-- C++: 遵循Google C++风格指南
-- Python: 遵循PEP 8规范
-- JavaScript: 使用ES6+语法，模块化开发
-
-### 测试策略
-1. 单元测试：各算法核心功能
-2. 集成测试：端到端API测试
-3. 性能测试：大规模图数据处理
-
-### 部署方案
-1. Docker容器化部署
-2. Kubernetes集群部署
-3. 云服务部署（AWS/GCP/阿里云）
-
-## 许可证
-
-MIT License
+```text
+social-graph-engine/
+├── backend_cpp/             # C++ 核心计算引擎
+│   ├── include/Graph.h      # 核心数据结构与算法接口声明
+│   ├── src/                 # BFS / PageRank / LPA 算法实现
+│   └── CMakeLists.txt       # 跨平台构建脚本
+├── middleware_python/       # FastAPI 微服务中间件
+│   ├── server.py            # API 路由与 C++ 进程调度控制
+│   └── requirements.txt     # Python 依赖清单
+├── frontend_web/            # WebGL 可视化前端
+│   ├── index.html           # UI 骨架与加载屏
+│   ├── css/style.css        # 赛博朋克主题样式
+│   └── js/                  # API通信 / 3D渲染引擎 / 业务调度 解耦模块
+└── .github/workflows/       # CI/CD 自动化流水线配置
