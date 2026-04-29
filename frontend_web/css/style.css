@@ -362,3 +362,164 @@
      color: inherit !important;
      padding: 0 !important;
  }
+ /* ================= 🚀 赛博朋克全局消息通知 (Toast) ================= */
+#toast-container {
+    position: fixed;
+    top: 20px;
+    right: 20px;
+    z-index: 10000;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    pointer-events: none;
+}
+
+.cyber-toast {
+    background: rgba(10, 15, 30, 0.95);
+    backdrop-filter: blur(10px);
+    border-left: 4px solid #00ff88;
+    color: #fff;
+    padding: 15px 25px;
+    border-radius: 4px;
+    font-weight: 500;
+    font-size: 14px;
+    letter-spacing: 1px;
+    box-shadow: 0 5px 20px rgba(0, 0, 0, 0.5);
+    animation: slideInRight 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.cyber-toast.error {
+    border-left-color: #ff0055;
+    box-shadow: 0 5px 20px rgba(255, 0, 85, 0.2);
+}
+
+.cyber-toast.warning {
+    border-left-color: #ffaa00;
+}
+
+@keyframes slideInRight {
+    from { transform: translateX(120%); opacity: 0; }
+    to { transform: translateX(0); opacity: 1; }
+}
+
+@keyframes fadeOutUp {
+    to { transform: translateY(-20px); opacity: 0; }
+}
+/* ================= 📡 人脉雷达探测面板 ================= */
+.cyber-radar-panel {
+    position: fixed;
+    right: -320px; /* 默认隐藏在屏幕右侧外 */
+    top: 20px;
+    bottom: 20px;
+    width: 280px;
+    background: rgba(10, 15, 30, 0.7);
+    backdrop-filter: blur(15px);
+    -webkit-backdrop-filter: blur(15px);
+    border: 1px solid rgba(255, 215, 0, 0.3);
+    border-radius: 12px;
+    box-shadow: -5px 0 30px rgba(0, 0, 0, 0.6), inset 0 0 20px rgba(255, 215, 0, 0.05);
+    padding: 20px;
+    color: #fff;
+    transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    display: flex;
+    flex-direction: column;
+    z-index: 100;
+}
+
+.cyber-radar-panel.active {
+    right: 20px; /* 触发时丝滑滑入屏幕 */
+}
+
+.radar-header {
+    border-bottom: 1px solid rgba(255, 215, 0, 0.3);
+    padding-bottom: 15px;
+    margin-bottom: 15px;
+}
+
+.radar-header h3 { color: #ffd700; text-shadow: 0 0 10px rgba(255, 215, 0, 0.4); margin: 0 0 5px 0; }
+.radar-header p { color: #aaa; font-size: 13px; margin: 0; }
+
+.radar-list {
+    flex: 1;
+    overflow-y: auto;
+    padding-right: 5px;
+}
+.radar-list::-webkit-scrollbar { width: 4px; }
+.radar-list::-webkit-scrollbar-thumb { background: rgba(255, 215, 0, 0.3); border-radius: 2px; }
+
+/* ================= 📡 人脉情报卡片 (替换原有 .radar-item) ================= */
+.radar-card {
+    background: rgba(0, 0, 0, 0.4);
+    border: 1px solid rgba(255, 255, 255, 0.05);
+    border-radius: 8px;
+    margin-bottom: 12px;
+    overflow: hidden;
+    transition: 0.3s;
+}
+
+.radar-card:hover {
+    border-color: rgba(255, 215, 0, 0.4);
+    box-shadow: 0 0 15px rgba(255, 215, 0, 0.1);
+    transform: translateX(-3px);
+}
+
+.card-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 10px 12px;
+    background: rgba(255, 255, 255, 0.05);
+    cursor: pointer;
+    transition: 0.2s;
+}
+
+.card-header:hover { background: rgba(255, 215, 0, 0.15); }
+
+.item-left { display: flex; align-items: center; gap: 10px; }
+.n-id { font-weight: bold; font-size: 14px; letter-spacing: 1px; }
+.n-score { font-size: 12px; color: #00ff88; font-family: monospace; font-weight: bold;}
+
+.card-body {
+    padding: 10px 12px;
+    font-size: 12px;
+    color: #aaa;
+}
+
+.stat-row {
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 6px;
+}
+
+.card-actions {
+    display: flex;
+    gap: 8px;
+    padding: 0 12px 12px 12px;
+}
+
+.btn-mini {
+    flex: 1;
+    background: rgba(0, 204, 255, 0.1) !important;
+    border: 1px solid rgba(0, 204, 255, 0.3) !important;
+    color: #00ccff !important;
+    padding: 6px 0 !important;
+    font-size: 11px !important;
+    border-radius: 4px !important;
+    cursor: pointer !important;
+    transition: 0.2s !important;
+    margin: 0 !important;
+    box-shadow: none !important;
+}
+
+.btn-mini:hover { background: rgba(0, 204, 255, 0.3) !important; }
+
+.btn-focus {
+    background: rgba(255, 215, 0, 0.1) !important;
+    border-color: rgba(255, 215, 0, 0.3) !important;
+    color: #ffd700 !important;
+}
+
+.btn-focus:hover { background: rgba(255, 215, 0, 0.3) !important; }

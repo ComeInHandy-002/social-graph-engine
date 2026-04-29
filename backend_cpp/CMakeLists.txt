@@ -10,6 +10,8 @@ add_executable(graph_engine
         src/AlgoBFS.cpp
         src/AlgoPageRank.cpp
         src/AlgoLPA.cpp
+        src/AlgoDijkstra.cpp
+        src/AlgoDFS.cpp
 )
 
 target_include_directories(graph_engine PRIVATE include)

@@ -47,19 +47,25 @@ int main(int argc, char* argv[]) {
     }
     // ... 前面的 get_full_graph 保持不变 ...
 
-    else if (command == "shortest_path") {
+    else if (command == "shortest_path" || command == "dijkstra_path") {
         if (argc < 5) return 1;
         std::string start = trim(argv[3]);
         std::string target = trim(argv[4]);
 
-        LOG_INFO("装载 BFS 寻路插件...");
-        IPathFindingAlgorithm* algo = new BFSAlgorithm();
+        IPathFindingAlgorithm* algo = nullptr;
 
-        // ⏱️ 开始计时
+        // 🌟 动态调度！根据指令装载不同的算法引擎
+        if (command == "dijkstra_path") {
+            LOG_INFO("装载 Dijkstra 进阶寻路插件 (带权亲密度)...");
+            algo = new DijkstraAlgorithm();
+        } else {
+            LOG_INFO("装载 BFS 基础寻路插件 (最少中转)...");
+            algo = new BFSAlgorithm();
+        }
+
         auto t_start = std::chrono::high_resolution_clock::now();
         auto path = algo->execute(graph, start, target);
         auto t_end = std::chrono::high_resolution_clock::now();
-        // ⏱️ 计算毫秒
         long long time_ms = std::chrono::duration_cast<std::chrono::milliseconds>(t_end - t_start).count();
 
         delete algo;
@@ -67,7 +73,6 @@ int main(int argc, char* argv[]) {
         if (path.empty()) {
             std::cout << "{\"status\":\"error\",\"message\":\"未找到路径\"}" << std::endl;
         } else {
-            // 🌟 在 JSON 里加上 time_ms
             std::cout << "{\"status\":\"success\",\"time_ms\":" << time_ms << ",\"path\":[";
             for (size_t i = 0; i < path.size(); ++i) {
                 std::cout << "\"" << path[i] << "\"";
@@ -75,6 +80,28 @@ int main(int argc, char* argv[]) {
             }
             std::cout << "]}" << std::endl;
         }
+    }
+    else if (command == "echo_chamber") {
+        if (argc < 4) return 1;
+        std::string startNode = trim(argv[3]);
+
+        LOG_INFO("启动 DFS 深度穿透：探测回声室效应...");
+        DFSAlgorithm* algo = new DFSAlgorithm();
+
+        auto t_start = std::chrono::high_resolution_clock::now();
+        auto path = algo->detectEchoChamber(graph, startNode);
+        auto t_end = std::chrono::high_resolution_clock::now();
+        long long time_ms = std::chrono::duration_cast<std::chrono::milliseconds>(t_end - t_start).count();
+
+        delete algo;
+
+        // 返回 JSON 数据
+        std::cout << "{\"status\":\"success\",\"time_ms\":" << time_ms << ",\"path\":[";
+        for (size_t i = 0; i < path.size(); ++i) {
+            std::cout << "\"" << path[i] << "\"";
+            if (i < path.size() - 1) std::cout << ",";
+        }
+        std::cout << "]}" << std::endl;
     }
     else if (command == "pagerank") {
         LOG_INFO("装载 PageRank 分析插件...");

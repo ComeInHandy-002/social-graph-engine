@@ -17,6 +17,13 @@
   <div id="side-bar">
     <h3>🌌 社交引擎控制台</h3>
     <button class="btn-load" id="btn-load">⚡ 载入核心数据集</button>
+    <div id="timeline-panel" style="display: none; background: rgba(0,0,0,0.4); padding: 12px; border-radius: 8px; margin-top: 10px; margin-bottom: 15px; border: 1px solid rgba(0,255,136,0.2);">
+      <div style="font-size: 12px; color: #00ff88; margin-bottom: 8px; text-align: center; font-weight: bold; letter-spacing: 1px;">🌌 宇宙膨胀时间轴</div>
+      <div style="display: flex; gap: 10px; align-items: center;">
+        <button id="btn-play" style="width: 40px; padding: 5px; margin: 0; background: linear-gradient(45deg, #0055ff, #0088ff);">▶️</button>
+        <input type="range" id="timeline-slider" min="1" max="100" value="1" style="flex: 1;">
+      </div>
+    </div>
 
     <div class="stat-panel">
       <div class="stat-item">
@@ -32,7 +39,11 @@
     <div class="input-group">
       <input id="s" placeholder="起点 ID"> <span style="color:#555">➔</span> <input id="t" placeholder="终点 ID">
     </div>
-    <button id="btn-path">🎯 追踪最短通信链路</button>
+    <div style="display: flex; gap: 8px; margin-bottom: 8px;">
+      <button id="btn-path-bfs" title="以最少的人数触达">🎯 基础追踪 (BFS)</button>
+      <button id="btn-path-dijkstra" title="寻找关系最铁的路径" style="background: linear-gradient(45deg, #aa00ff, #ff00aa);">🧠 亲密路由 (Dijkstra)</button>
+    </div>
+    <button id="btn-dfs" title="探测围绕此人的信息闭环" style="background: linear-gradient(45deg, #ff4400, #ff8800); margin-bottom: 8px;">🕵️‍♂️ 探测回声室 (DFS)</button>
     <button class="btn-reset" id="btn-reset">🌍 恢复全景视角</button>
     <button class="btn-danger" id="btn-toggle-links">👁️ 隐藏全网连线 (极度流畅)</button>
 
@@ -60,6 +71,8 @@
   <div id="path-hud"></div>
 
   <script type="module" src="js/app.js"></script>
+
+  <div id="toast-container"></div>
 </body>
 
 </html>

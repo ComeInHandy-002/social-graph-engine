@@ -115,4 +115,17 @@ class LPAAlgorithm : public ICommunityAlgorithm {
 public:
     std::unordered_map<std::string, std::string> execute(const SocialGraph& graph) override;
 };
+
+// 4. Dijkstra 寻路插件 (带权最短路径)
+class DijkstraAlgorithm : public IPathFindingAlgorithm {
+public:
+    std::vector<std::string> execute(const SocialGraph& graph, const std::string& start, const std::string& target) override;
+};
+
+class DFSAlgorithm : public IPathFindingAlgorithm {
+public:
+    std::vector<std::string> execute(const SocialGraph& graph, const std::string& start, const std::string& target) override;
+    // 🌟 新增：深度穿透探测
+    std::vector<std::string> detectEchoChamber(const SocialGraph& graph, const std::string& startNode);
+};
 #endif // GRAPH_H

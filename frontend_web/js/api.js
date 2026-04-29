@@ -26,11 +26,12 @@ export class APIService {
     }
 
     // 注意：最短路径是 POST 请求
-    static async getShortestPath(startNode, targetNode) {
+    static async getShortestPath(startNode, targetNode, algorithm = 'bfs') {
         return this.request('/shortest_path', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ start_node: startNode, target_node: targetNode })
+            // 🌟 把算法类型发给后端
+            body: JSON.stringify({ start_node: startNode, target_node: targetNode, algorithm: algorithm })
         });
     }
 }
