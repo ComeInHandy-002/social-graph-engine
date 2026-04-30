@@ -1,7 +1,30 @@
-# 忽略 Python 缓存文件
+# Python
 __pycache__/
 *.pyc
+*.pyo
 
-# 忽略系统自动生成的垃圾文件
+# 系统
 .DS_Store
 Thumbs.db
+
+# 构建产物
+backend_cpp/build/
+backend_cpp/cmake-build-debug/
+backend_cpp/cmake-build-release/
+*.exe
+*.obj
+*.o
+
+# 临时/调试文件
+test_output.txt
+temp_benchmark_*.txt
+temp_graph_output.json
+
+# IDE
+.idea/
+.vscode/
+*.swp
+
+# 环境
+.env
+*.env.local

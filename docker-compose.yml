@@ -1,44 +1,52 @@
 version: '3.8'
 
 services:
-  cpp-backend:
-    build:
-      context: ./backend_cpp
-      dockerfile: Dockerfile
-    volumes:
-      - ./backend_cpp:/app
-      - ./data:/app/data
-    command: /app/build/SocialNetworkAnalysis
+  redis:
+    image: redis:7-alpine
+    ports:
+      - "6379:6379"
+    restart: unless-stopped
+
+  neo4j:
+    image: neo4j:5-community
+    ports:
+      - "7474:7474"
+      - "7687:7687"
     environment:
-      - PYTHONUNBUFFERED=1
-    stdin_open: true
-    tty: true
+      - NEO4J_AUTH=${NEO4J_AUTH:-neo4j/password123}
+    restart: unless-stopped
 
   python-middleware:
     build:
       context: ./middleware_python
       dockerfile: Dockerfile
     ports:
-      - "5000:5000"
+      - "8000:8000"
     volumes:
       - ./middleware_python:/app
-      - ./data:/app/data
+      - ./backend_cpp:/data
     depends_on:
-      - cpp-backend
+      - redis
+      - neo4j
     environment:
-      - FLASK_ENV=development
-      - FLASK_APP=app.py
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+      - NEO4J_URI=bolt://neo4j:7687
+      - NEO4J_USER=${NEO4J_USER:-neo4j}
+      - NEO4J_PASSWORD=${NEO4J_PASSWORD:-password123}
+      - CPP_ENGINE_PATH=/app/../data/cmake-build-release/graph_engine
+      - GRAPH_DATA_PATH=/app/../data/facebook_combined.txt
+    command: uvicorn server:app --host 0.0.0.0 --port 8000
 
   web-frontend:
-    build:
-      context: ./frontend_web
-      dockerfile: Dockerfile
+    image: nginx:alpine
     ports:
       - "80:80"
     volumes:
-      - ./frontend_web:/usr/share/nginx/html
+      - ./frontend_web:/usr/share/nginx/html:ro
     depends_on:
       - python-middleware
 
 volumes:
-  data:
+  neo4j_data:
+  redis_data:

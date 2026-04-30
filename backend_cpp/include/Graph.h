@@ -35,9 +35,17 @@ public:
 
     std::vector<std::string> get_all_nodes() const;
     std::vector<std::pair<std::string, std::string>> get_all_edges() const;
+    size_t node_count() const;
+    size_t edge_count() const;
+    std::vector<std::string> get_neighbors_copy(const std::string& node) const;
 
 private:
     std::unordered_map<std::string, std::vector<std::string>> adj_list;
+    // 惰性缓存：仅在添加新边后失效
+    mutable std::vector<std::string> cached_nodes;
+    mutable bool nodes_cache_valid = false;
+    mutable std::vector<std::pair<std::string, std::string>> cached_edges;
+    mutable bool edges_cache_valid = false;
 };
 
 // ==========================================
@@ -125,7 +133,41 @@ public:
 class DFSAlgorithm : public IPathFindingAlgorithm {
 public:
     std::vector<std::string> execute(const SocialGraph& graph, const std::string& start, const std::string& target) override;
-    // 🌟 新增：深度穿透探测
     std::vector<std::string> detectEchoChamber(const SocialGraph& graph, const std::string& startNode);
+};
+
+// 5. Betweenness Centrality (Brandes)
+class BetweennessCentralityAlgorithm : public IScoringAlgorithm {
+public:
+    std::unordered_map<std::string, double> execute(const SocialGraph& graph) override;
+};
+
+// 6. Connected Components
+class ConnectedComponentsAlgorithm : public ICommunityAlgorithm {
+public:
+    std::unordered_map<std::string, std::string> execute(const SocialGraph& graph) override;
+    int get_component_count() const;
+    std::unordered_map<std::string, int> get_component_sizes() const;
+private:
+    int _component_count = 0;
+    std::unordered_map<std::string, int> _component_sizes;
+};
+
+// 7. K-Core Decomposition
+class KCoreAlgorithm : public IScoringAlgorithm {
+public:
+    std::unordered_map<std::string, double> execute(const SocialGraph& graph) override;
+};
+
+// 8. Clustering Coefficient
+class ClusteringCoefficientAlgorithm : public IScoringAlgorithm {
+public:
+    std::unordered_map<std::string, double> execute(const SocialGraph& graph) override;
+};
+
+// 9. Graph Statistics (aggregate metrics)
+class GraphStatsAlgorithm {
+public:
+    std::string execute(const SocialGraph& graph);
 };
 #endif // GRAPH_H

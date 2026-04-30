@@ -152,12 +152,18 @@ export class Engine3D {
     }
 
     buildTooltip(node) {
+        const bc = node.betweennessScore ? node.betweennessScore.toFixed(4) : '-';
+        const kc = node.kcore !== undefined ? Math.round(node.kcore) : '-';
+        const cc = node.clusteringCoeff !== undefined ? node.clusteringCoeff.toFixed(3) : '-';
         return `
             <div class="cyber-tooltip">
                 <h4>用户档案: ID ${node.id}</h4>
                 <p><span class="label">星系阵营</span> <span class="value">${node.community || '未知'} <span class="color-dot" style="background:${node.color || '#fff'};"></span></span></p>
                 <p><span class="label">直系圈子</span> <span class="value" style="color:#00ccff;">${node.degree || 0} 人</span></p>
-                <p><span class="label">全网权重</span> <span class="value" style="color:#ffaa00;">${node.prScore ? (node.prScore * 100).toFixed(4) : 0}%</span></p>
+                <p><span class="label">全网权重 (PR)</span> <span class="value" style="color:#ffaa00;">${node.prScore ? (node.prScore * 100).toFixed(4) : 0}%</span></p>
+                <p><span class="label">中介中心性 (BC)</span> <span class="value" style="color:#ffd700;">${bc}</span></p>
+                <p><span class="label">核心度 (K-Core)</span> <span class="value" style="color:#aa00ff;">${kc}</span></p>
+                <p><span class="label">聚类系数 (CC)</span> <span class="value" style="color:#00ffff;">${cc}</span></p>
                 <p style="text-align:center; margin-top:8px; color:#888; font-size:10px;">[左键]锁定 | [右键]人脉 | [拖拽]移动</p>
             </div>
         `;
@@ -170,7 +176,7 @@ export class Engine3D {
     }
 
     // 依然保留了极其稳定的邻居计算和时间轴控制
-    prepareBigBang(data, prMap, communityMap, degreeMap) {
+    prepareBigBang(data, prMap, communityMap, degreeMap, bcMap = {}, kcMap = {}, ccMap = {}) {
         let colorIdx = 0; const rootColors = {};
         this.neighbors.clear();
         data.nodes.forEach(n => this.neighbors.set(n.id, new Set()));
@@ -185,17 +191,20 @@ export class Engine3D {
 
         const totalNodes = data.nodes.length;
         const nodeBirthMap = new Map();
-        
+
         data.nodes.forEach((node, idx) => {
             node.degree = degreeMap[node.id] || 0;
             node.prScore = prMap[node.id] || 0;
             node.community = communityMap[node.id] || '未知';
+            node.betweennessScore = bcMap[node.id] || 0;
+            node.kcore = kcMap[node.id] || 0;
+            node.clusteringCoeff = ccMap[node.id] || 0;
             if (!rootColors[node.community]) {
                 rootColors[node.community] = CONFIG.CYBER_PALETTE[colorIdx % CONFIG.CYBER_PALETTE.length];
                 colorIdx++;
             }
             node.color = rootColors[node.community];
-            
+
             node.birthFrame = Math.max(1, Math.ceil((idx / totalNodes) * 100));
             nodeBirthMap.set(node.id, node.birthFrame);
         });

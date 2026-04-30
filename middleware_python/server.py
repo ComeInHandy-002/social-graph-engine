@@ -1,15 +1,31 @@
-from fastapi import FastAPI
-from fastapi.middleware.cors import CORSMiddleware
-from pydantic import BaseModel
-from neo4j import GraphDatabase
-import redis
+import os
 import subprocess
+import asyncio
 import json
-import time
+import logging
+import csv
+import io
 
-app = FastAPI()
+from fastapi import FastAPI, WebSocket, WebSocketDisconnect, Query
+from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import StreamingResponse
+from models import (
+    PathRequest, PathResponse, GraphAllResponse,
+    AlgorithmResultResponse, CommunityResponse,
+    GraphStatsResponse, ConnectedComponentsResponse,
+    HealthResponse
+)
 
-# 解决跨域
+# 结构化日志
+logging.basicConfig(level=logging.INFO, format="[%(asctime)s] [%(levelname)s] %(message)s")
+logger = logging.getLogger("socialgraph")
+
+app = FastAPI(
+    title="SocialGraph Pro | 社交网络分析引擎",
+    version="2.0.0",
+    description="高性能图计算 RESTful API，支持 Betweenness Centrality、PageRank、LPA、K-Core 等 10 种算法"
+)
+
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
@@ -18,138 +34,305 @@ app.add_middleware(
 )
 
 # ==========================================
-# 🌟 第一部分：基础设施连接
+# 基础设施连接 (lazy-init)
 # ==========================================
-print("🔌 正在连接 Redis 缓存层...")
-redis_client = redis.Redis(host='127.0.0.1', port=6379, decode_responses=True)
+redis_client = None
+neo4j_driver = None
 
-print("🗄️ 正在连接 Neo4j 图数据库...")
-NEO4J_URI = "bolt://127.0.0.1:7687"
-NEO4J_AUTH = ("neo4j", "password123")
-neo4j_driver = GraphDatabase.driver(NEO4J_URI, auth=NEO4J_AUTH)
 
-# 🎯 极其精准的绝对路径：直指你的 cmake-build-debug 文件夹
-CPP_ENGINE_PATH = r"D:\claudecode_workspace\backend_cpp\cmake-build-debug\graph_engine.exe"
+def get_redis():
+    global redis_client
+    if redis_client is None:
+        host = os.environ.get("REDIS_HOST", "127.0.0.1")
+        port = int(os.environ.get("REDIS_PORT", "6379"))
+        try:
+            import redis as _redis
+            redis_client = _redis.Redis(host=host, port=port, decode_responses=True)
+            redis_client.ping()
+            logger.info("Redis 已连接: %s:%s", host, port)
+        except Exception as e:
+            logger.warning("Redis 不可用 (%s:%s): %s", host, port, e)
+            redis_client = False
+    return redis_client if redis_client is not False else None
 
-# 🎯 数据文件的绝对路径（假设它在 backend_cpp 根目录下）
-GRAPH_DATA_PATH = r"D:\claudecode_workspace\backend_cpp\facebook_combined.txt"
+
+def get_neo4j():
+    global neo4j_driver
+    if neo4j_driver is None:
+        uri = os.environ.get("NEO4J_URI", "bolt://127.0.0.1:7687")
+        user = os.environ.get("NEO4J_USER", "neo4j")
+        password = os.environ.get("NEO4J_PASSWORD", "password123")
+        try:
+            from neo4j import GraphDatabase as _GraphDatabase
+            neo4j_driver = _GraphDatabase.driver(uri, auth=(user, password))
+            with neo4j_driver.session() as s:
+                s.run("RETURN 1")
+            logger.info("Neo4j 已连接: %s", uri)
+        except Exception as e:
+            logger.warning("Neo4j 不可用 (%s): %s", uri, e)
+            neo4j_driver = False
+    return neo4j_driver if neo4j_driver is not False else None
+
 
 # ==========================================
-# 🚀 第二部分：四大核心接口
+# 路径解析
+# ==========================================
+def _resolve_path(env_key, *candidates):
+    val = os.environ.get(env_key)
+    if val and os.path.exists(val):
+        return val
+    base = os.path.dirname(os.path.abspath(__file__))
+    for c in candidates:
+        path = os.path.normpath(os.path.join(base, c))
+        if os.path.exists(path):
+            return path
+    return os.path.normpath(os.path.join(base, candidates[0]))
+
+
+CPP_ENGINE_PATH = _resolve_path(
+    "CPP_ENGINE_PATH",
+    "../backend_cpp/cmake-build-release/graph_engine.exe",
+    "../backend_cpp/cmake-build-debug/graph_engine.exe",
+    "../backend_cpp/build/graph_engine",
+    "../backend_cpp/build/graph_engine.exe",
+)
+
+GRAPH_DATA_PATH = _resolve_path(
+    "GRAPH_DATA_PATH",
+    "../backend_cpp/facebook_combined.txt",
+)
+
+
+def run_cpp_engine(command, *args):
+    cmd = [CPP_ENGINE_PATH, GRAPH_DATA_PATH, command] + list(args)
+    logger.info("调用 C++ 引擎: %s", command)
+    res = subprocess.run(cmd, capture_output=True, text=True, encoding="utf-8")
+    if res.returncode != 0:
+        return {"status": "error", "message": f"C++ 引擎崩溃: {res.stderr}"}
+    try:
+        return json.loads(res.stdout)
+    except json.JSONDecodeError:
+        return {"status": "error", "message": "C++ 引擎返回数据格式异常"}
+
+
+async def run_cpp_engine_async(command, *args):
+    cmd = [CPP_ENGINE_PATH, GRAPH_DATA_PATH, command] + list(args)
+    proc = await asyncio.create_subprocess_exec(
+        *cmd, stdout=asyncio.subprocess.PIPE, stderr=asyncio.subprocess.PIPE
+    )
+    stdout, stderr = await proc.communicate()
+    if proc.returncode != 0:
+        return {"status": "error", "message": f"C++ 引擎崩溃: {stderr.decode('utf-8', errors='replace')}"}
+    try:
+        return json.loads(stdout.decode("utf-8"))
+    except json.JSONDecodeError:
+        return {"status": "error", "message": "C++ 引擎返回数据格式异常"}
+
+
+def _cache_get_or_compute(cache_key, ttl, compute_fn):
+    r = get_redis()
+    if r:
+        cached = r.get(cache_key)
+        if cached:
+            return json.loads(cached)
+    data = compute_fn()
+    if r and data.get("status") == "success":
+        r.setex(cache_key, ttl, json.dumps(data))
+    return data
+
+
+# ==========================================
+# REST API 路由
 # ==========================================
 
-# 1. 获取全网拓扑 (Neo4j + Redis)
-@app.get("/api/v1/graph/all")
+@app.get("/api/v1/graph/all", response_model=GraphAllResponse)
 async def get_all_graph_data():
-    cache_key = "social_graph:all_topology_v7"  # 升级为 v7 强行绕过旧缓存
-    
-    cached_data = redis_client.get(cache_key)
-    if cached_data:
-        print("⚡ [全网拓扑] 命中 Redis 缓存！")
-        return json.loads(cached_data)
+    cache_key = "social_graph:all_topology_v7"
+    r = get_redis()
+    if r:
+        cached = r.get(cache_key)
+        if cached:
+            return json.loads(cached)
 
-    print("🐌 [全网拓扑] 缓存未命中，正在从 Neo4j 提取星系数据...")
-    start_time = time.time()
-    
-    with neo4j_driver.session() as session:
-        # 限制 3000 条边防止前端浏览器卡死
-        result = session.run("MATCH (n)-[r:KNOWS]->(m) RETURN n.id AS source, m.id AS target")
-        
-        # 统一转为字符串，确保前端 3d-force-graph 兼容性
-        links = [{"source": str(record["source"]), "target": str(record["target"])} for record in result]
-        
-        node_ids = set()
-        for link in links:
-            node_ids.add(link["source"])
-            node_ids.add(link["target"])
-            
-        nodes = [{"id": nid, "group": 1} for nid in node_ids]
-        
-       # 🚨 完美契合前端要求的终极数据结构
-        data = {
-            "status": "success",  # 🌟 就是这把极其关键的钥匙！
-            "nodes": nodes,
-            "links": links
-        }
+    # 优先尝试 Neo4j，不可用时回退到 C++ 引擎直接读文件
+    driver = get_neo4j()
+    if driver:
+        logger.info("从 Neo4j 提取全网拓扑...")
+        try:
+            with driver.session() as session:
+                result = session.run("MATCH (n)-[r:KNOWS]->(m) RETURN n.id AS source, m.id AS target")
+                links = [{"source": str(record["source"]), "target": str(record["target"])} for record in result]
+        except Exception:
+            driver = None  # Neo4j 查询失败，回退
 
-        redis_client.setex(cache_key, 3600, json.dumps(data))
-        print(f"💾 [全网拓扑] 数据已存入 Redis！")
-        
-        return data
+    if not driver:
+        logger.info("Neo4j 不可用，从 C++ 引擎直接加载拓扑...")
+        data = run_cpp_engine("get_full_graph")
+        if data.get("status") == "success":
+            if r:
+                r.setex(cache_key, 3600, json.dumps(data))
+            return data
+        return {"status": "error", "nodes": [], "links": []}
 
-# 2. PageRank 权重计算
-@app.get("/api/v1/graph/pagerank")
+    node_ids = set()
+    for link in links:
+        node_ids.add(link["source"])
+        node_ids.add(link["target"])
+    nodes = [{"id": nid, "group": 1} for nid in node_ids]
+    data = {"status": "success", "nodes": nodes, "links": links}
+    if r:
+        r.setex(cache_key, 3600, json.dumps(data))
+    return data
+
+
+@app.get("/api/v1/graph/pagerank", response_model=AlgorithmResultResponse)
 async def get_pagerank():
-    cache_key = "social_graph:pagerank_v3" # 再次升级版本
-    cached = redis_client.get(cache_key)
-    if cached:
-        return json.loads(cached)
-        
-    print(f"🔥 [PageRank] 调用路径: {CPP_ENGINE_PATH}")
-    # 增加超时处理和错误捕获
-    try:
-        cmd = [CPP_ENGINE_PATH, GRAPH_DATA_PATH, "pagerank"]
-        res = subprocess.run(cmd, capture_output=True, text=True, encoding='utf-8')
-        
-        if res.returncode != 0:
-            return {"status": "error", "message": f"C++ 引擎运行崩溃: {res.stderr}"}
-            
-        data = json.loads(res.stdout)
-        redis_client.setex(cache_key, 86400, json.dumps(data))
-        return data
-    except Exception as e:
-        return {"status": "error", "message": f"Python 调度异常: {str(e)}"}
+    return _cache_get_or_compute("social_graph:pagerank_v3", 86400, lambda: run_cpp_engine("pagerank"))
 
-# 3. LPA 社区发现
-@app.get("/api/v1/graph/community")
+
+@app.get("/api/v1/graph/community", response_model=CommunityResponse)
 async def get_community():
-    cache_key = "social_graph:community_v3"
-    cached = redis_client.get(cache_key)
-    if cached:
-        return json.loads(cached)
+    return _cache_get_or_compute("social_graph:community_v3", 86400, lambda: run_cpp_engine("community"))
 
-    try:
-        cmd = [CPP_ENGINE_PATH, GRAPH_DATA_PATH, "community"]
-        res = subprocess.run(cmd, capture_output=True, text=True, encoding='utf-8')
-        
-        if res.returncode != 0:
-            return {"status": "error", "message": f"C++ 社区算法崩溃: {res.stderr}"}
-            
-        data = json.loads(res.stdout)
-        redis_client.setex(cache_key, 86400, json.dumps(data))
-        return data
-    except Exception as e:
-        return {"status": "error", "message": f"社区分析调度失败: {str(e)}"}
 
-# 4. 社交链路探测 (支持 BFS / Dijkstra / DFS 回声室)
-class PathRequest(BaseModel):
-    start_node: str  
-    target_node: str = ""  # 🌟 将终点设为可选，因为 DFS 探测环路只需要起点
-    algorithm: str = "bfs" 
+@app.get("/api/v1/graph/betweenness", response_model=AlgorithmResultResponse)
+async def get_betweenness():
+    return _cache_get_or_compute("social_graph:betweenness_v1", 86400,
+                                  lambda: run_cpp_engine("betweenness"))
 
-@app.post("/api/v1/graph/shortest_path")
+
+@app.get("/api/v1/graph/connected_components", response_model=ConnectedComponentsResponse)
+async def get_connected_components():
+    return _cache_get_or_compute("social_graph:connected_components_v1", 86400,
+                                  lambda: run_cpp_engine("connected_components"))
+
+
+@app.get("/api/v1/graph/kcore", response_model=AlgorithmResultResponse)
+async def get_kcore():
+    return _cache_get_or_compute("social_graph:kcore_v1", 86400, lambda: run_cpp_engine("kcore"))
+
+
+@app.get("/api/v1/graph/clustering_coeff", response_model=AlgorithmResultResponse)
+async def get_clustering_coeff():
+    return _cache_get_or_compute("social_graph:clustering_v1", 86400,
+                                  lambda: run_cpp_engine("clustering_coeff"))
+
+
+@app.get("/api/v1/graph/stats", response_model=GraphStatsResponse)
+async def get_graph_stats():
+    return _cache_get_or_compute("social_graph:stats_v1", 600, lambda: run_cpp_engine("graph_stats"))
+
+
+@app.post("/api/v1/graph/shortest_path", response_model=PathResponse)
 async def get_shortest_path(req: PathRequest):
-    # 🌟 逻辑分发：根据算法类型决定传给 C++ 引擎的指令
     if req.algorithm == "dfs":
-        # 如果是 DFS，执行“回声室探测”指令，只传起点
-        print(f"🕵️‍♂️ [DFS] 启动深度穿透，探测 ID {req.start_node} 的回声室闭环...")
-        command = "echo_chamber"
-        cmd = [CPP_ENGINE_PATH, GRAPH_DATA_PATH, command, str(req.start_node)]
+        logger.info("DFS 回声室探测: start=%s", req.start_node)
+        data = run_cpp_engine("echo_chamber", str(req.start_node))
+    elif req.algorithm == "dijkstra":
+        logger.info("Dijkstra 寻路: %s -> %s", req.start_node, req.target_node)
+        data = run_cpp_engine("dijkstra_path", str(req.start_node), str(req.target_node))
     else:
-        # 如果是 BFS 或 Dijkstra，执行寻路指令，传起点和终点
-        print(f"🔥 [{req.algorithm.upper()}] 唤醒引擎追踪 {req.start_node} -> {req.target_node}...")
-        command = "dijkstra_path" if req.algorithm == "dijkstra" else "shortest_path"
-        cmd = [CPP_ENGINE_PATH, GRAPH_DATA_PATH, command, str(req.start_node), str(req.target_node)]
-    
-    res = subprocess.run(cmd, capture_output=True, text=True)
-    
+        logger.info("BFS 寻路: %s -> %s", req.start_node, req.target_node)
+        data = run_cpp_engine("shortest_path", str(req.start_node), str(req.target_node))
+
+    if data.get("status") == "success" and "path" in data:
+        data["path"] = [str(node) for node in data["path"]]
+    return data
+
+
+# ==========================================
+# 数据导出
+# ==========================================
+
+@app.get("/api/v1/graph/export/{data_type}")
+async def export_data(data_type: str, format: str = Query("csv")):
+    cache_key = f"social_graph:{data_type}_v1"
+    if data_type == "pagerank":
+        cache_key = "social_graph:pagerank_v3"
+    elif data_type == "community":
+        cache_key = "social_graph:community_v3"
+
+    r = get_redis()
+    data = None
+    if r:
+        cached = r.get(cache_key)
+        if cached:
+            data = json.loads(cached)
+    if not data:
+        data = run_cpp_engine(data_type)
+
+    if data.get("status") != "success":
+        return {"status": "error", "message": "数据获取失败"}
+
+    if format == "csv":
+        output = io.StringIO()
+        writer = csv.writer(output)
+        items = data.get("data", [])
+        if items:
+            writer.writerow(items[0].keys())
+            for item in items:
+                writer.writerow(item.values())
+        output.seek(0)
+        return StreamingResponse(
+            output,
+            media_type="text/csv",
+            headers={"Content-Disposition": f"attachment; filename={data_type}.csv"}
+        )
+    else:
+        output = io.StringIO()
+        json.dump(data, output, ensure_ascii=False, indent=2)
+        output.seek(0)
+        return StreamingResponse(
+            output,
+            media_type="application/json",
+            headers={"Content-Disposition": f"attachment; filename={data_type}.json"}
+        )
+
+
+# ==========================================
+# 健康检查
+# ==========================================
+
+@app.get("/api/v1/health", response_model=HealthResponse)
+async def health_check():
+    cpp_ok = os.path.exists(CPP_ENGINE_PATH)
+    redis_ok = get_redis() is not None
+    neo4j_ok = get_neo4j() is not None
+    return {
+        "status": "ok" if cpp_ok else "degraded",
+        "cpp_engine_available": cpp_ok,
+        "redis_available": redis_ok,
+        "neo4j_available": neo4j_ok,
+    }
+
+
+# ==========================================
+# WebSocket 实时分析
+# ==========================================
+
+@app.websocket("/api/v1/ws/analysis")
+async def ws_analysis(websocket: WebSocket):
+    await websocket.accept()
+    logger.info("WebSocket 客户端已连接")
     try:
-        data = json.loads(res.stdout)
-        
-        # 统一处理返回路径：将节点 ID 转为字符串，确保前端兼容性
-        if data.get("status") == "success" and "path" in data:
-            data["path"] = [str(node) for node in data["path"]]
-        return data
+        msg = await websocket.receive_json()
+        command = msg.get("command", "")
+        args = msg.get("args", [])
+        logger.info("WebSocket 请求: command=%s args=%s", command, args)
+
+        await websocket.send_json({"status": "running", "message": f"正在执行 {command}..."})
+
+        data = await run_cpp_engine_async(command, *args)
+
+        if data.get("status") == "success":
+            await websocket.send_json({"status": "completed", "data": data})
+        else:
+            await websocket.send_json({"status": "error", "message": data.get("message", "未知错误")})
+    except WebSocketDisconnect:
+        logger.info("WebSocket 客户端断开")
     except Exception as e:
-        print(f"❌ 算法执行失败，错误详情: {res.stderr}")
-        return {"status": "error", "message": f"算法调用异常: {str(e)}"}
+        logger.error("WebSocket 异常: %s", e)
+        try:
+            await websocket.send_json({"status": "error", "message": str(e)})
+        except Exception:
+            pass

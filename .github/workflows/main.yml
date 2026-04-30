@@ -1,4 +1,4 @@
-name: C++ 引擎跨平台自动化构建
+name: C++ 引擎跨平台自动化构建与测试
 
 on:
   push:
@@ -7,8 +7,8 @@ on:
     branches: [ main, master ]
 
 jobs:
-  build:
-    name: 构建于 ${{ matrix.os }}
+  cpp-build-and-test:
+    name: C++ 构建与测试 (${{ matrix.os }})
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
@@ -18,24 +18,45 @@ jobs:
     - name: 检出代码
       uses: actions/checkout@v3
 
-    # 🌟 告诉云端服务器：进到 backend_cpp 文件夹里去配置
     - name: 配置 CMake
       working-directory: ./backend_cpp
       run: cmake -B build -DCMAKE_BUILD_TYPE=Release
 
-    # 🌟 告诉云端服务器：进到 backend_cpp 文件夹里去编译
     - name: 执行编译
       working-directory: ./backend_cpp
       run: cmake --build build --config Release
 
-    # 🌟 Linux 环境测试路径
-    - name: 运行单元测试 (Linux)
+    - name: 运行连通性测试 (Linux)
       if: matrix.os == 'ubuntu-latest'
       working-directory: ./backend_cpp/build
       run: ./graph_engine run_test
 
-    # 🌟 Windows 环境测试路径
-    - name: 运行单元测试 (Windows)
+    - name: 运行连通性测试 (Windows)
       if: matrix.os == 'windows-latest'
       working-directory: ./backend_cpp/build
       run: .\Release\graph_engine.exe run_test
+
+    - name: 运行 C++ 单元测试 (Catch2)
+      working-directory: ./backend_cpp/build
+      run: ctest --output-on-failure -C Release
+
+  python-tests:
+    name: Python API 测试
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: ./middleware_python
+
+    steps:
+    - uses: actions/checkout@v3
+
+    - name: 设置 Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.11'
+
+    - name: 安装依赖
+      run: pip install -r requirements.txt
+
+    - name: 运行 pytest
+      run: pytest tests/ -v --tb=short

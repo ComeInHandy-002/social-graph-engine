@@ -147,6 +147,101 @@ int main(int argc, char* argv[]) {
         }
         std::cout << "]}" << std::endl;
     }
+    else if (command == "betweenness") {
+        LOG_INFO("装载 Betweenness Centrality 分析插件...");
+        IScoringAlgorithm* algo = new BetweennessCentralityAlgorithm();
+        auto t_start = std::chrono::high_resolution_clock::now();
+        auto bc = algo->execute(graph);
+        auto t_end = std::chrono::high_resolution_clock::now();
+        long long time_ms = std::chrono::duration_cast<std::chrono::milliseconds>(t_end - t_start).count();
+        delete algo;
+
+        std::cout << "{\"status\":\"success\",\"time_ms\":" << time_ms << ",\"data\":[";
+        bool first = true;
+        for (auto it = bc.begin(); it != bc.end(); ++it) {
+            if (!first) std::cout << ",";
+            std::cout << "{\"node\":\"" << it->first << "\",\"score\":" << it->second << "}";
+            first = false;
+        }
+        std::cout << "]}" << std::endl;
+    }
+    else if (command == "connected_components") {
+        LOG_INFO("装载 Connected Components 分析插件...");
+        ConnectedComponentsAlgorithm* algo = new ConnectedComponentsAlgorithm();
+        auto t_start = std::chrono::high_resolution_clock::now();
+        auto comps = algo->execute(graph);
+        int comp_count = algo->get_component_count();
+        auto comp_sizes = algo->get_component_sizes();
+        auto t_end = std::chrono::high_resolution_clock::now();
+        long long time_ms = std::chrono::duration_cast<std::chrono::milliseconds>(t_end - t_start).count();
+        delete algo;
+
+        std::cout << "{\"status\":\"success\",\"time_ms\":" << time_ms
+                  << ",\"component_count\":" << comp_count
+                  << ",\"component_sizes\":{";
+        bool first_cs = true;
+        for (const auto& cs : comp_sizes) {
+            if (!first_cs) std::cout << ",";
+            std::cout << "\"" << cs.first << "\":" << cs.second;
+            first_cs = false;
+        }
+        std::cout << "},\"data\":[";
+        bool first = true;
+        for (auto it = comps.begin(); it != comps.end(); ++it) {
+            if (!first) std::cout << ",";
+            std::cout << "{\"node\":\"" << it->first << "\",\"component\":\"" << it->second << "\"}";
+            first = false;
+        }
+        std::cout << "]}" << std::endl;
+    }
+    else if (command == "kcore") {
+        LOG_INFO("装载 K-Core Decomposition 分析插件...");
+        IScoringAlgorithm* algo = new KCoreAlgorithm();
+        auto t_start = std::chrono::high_resolution_clock::now();
+        auto kc = algo->execute(graph);
+        auto t_end = std::chrono::high_resolution_clock::now();
+        long long time_ms = std::chrono::duration_cast<std::chrono::milliseconds>(t_end - t_start).count();
+        delete algo;
+
+        std::cout << "{\"status\":\"success\",\"time_ms\":" << time_ms << ",\"data\":[";
+        bool first = true;
+        for (auto it = kc.begin(); it != kc.end(); ++it) {
+            if (!first) std::cout << ",";
+            std::cout << "{\"node\":\"" << it->first << "\",\"coreness\":" << it->second << "}";
+            first = false;
+        }
+        std::cout << "]}" << std::endl;
+    }
+    else if (command == "clustering_coeff") {
+        LOG_INFO("装载 Clustering Coefficient 分析插件...");
+        IScoringAlgorithm* algo = new ClusteringCoefficientAlgorithm();
+        auto t_start = std::chrono::high_resolution_clock::now();
+        auto cc = algo->execute(graph);
+        auto t_end = std::chrono::high_resolution_clock::now();
+        long long time_ms = std::chrono::duration_cast<std::chrono::milliseconds>(t_end - t_start).count();
+        delete algo;
+
+        std::cout << "{\"status\":\"success\",\"time_ms\":" << time_ms << ",\"data\":[";
+        bool first = true;
+        for (auto it = cc.begin(); it != cc.end(); ++it) {
+            if (!first) std::cout << ",";
+            std::cout << "{\"node\":\"" << it->first << "\",\"coefficient\":" << it->second << "}";
+            first = false;
+        }
+        std::cout << "]}" << std::endl;
+    }
+    else if (command == "graph_stats") {
+        LOG_INFO("执行图级别聚合统计...");
+        GraphStatsAlgorithm algo;
+        auto t_start = std::chrono::high_resolution_clock::now();
+        std::string stats_json = algo.execute(graph);
+        auto t_end = std::chrono::high_resolution_clock::now();
+        long long time_ms = std::chrono::duration_cast<std::chrono::milliseconds>(t_end - t_start).count();
+
+        // 在 stats_json 中插入 time_ms
+        std::cout << "{\"status\":\"success\",\"time_ms\":" << time_ms << ","
+                  << stats_json.substr(stats_json.find("\"nodes\"")) << std::endl;
+    }
 
     LOG_INFO("执行完毕，引擎退出。");
     return 0;

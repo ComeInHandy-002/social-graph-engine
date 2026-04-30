@@ -6,17 +6,28 @@
   <title>SocialGraph Pro | 社交网络可视分析中枢</title>
   <link rel="stylesheet" href="css/style.css">
   <script src="https://unpkg.com/3d-force-graph"></script>
+  <script src="js/chart.umd.min.js"></script>
 </head>
 
 <body>
+  <!-- 加载遮罩 -->
   <div id="loading-screen">
     <div class="spinner"></div>
     <div id="loading-text">系统休眠中...</div>
+    <div id="loading-progress" style="display:none; margin-top:12px; color:#888; font-size:11px;"></div>
   </div>
 
+  <!-- 全局搜索 -->
+  <div id="search-container">
+    <input id="global-search" placeholder="🔍 搜索节点 ID..." autocomplete="off">
+    <div id="search-results"></div>
+  </div>
+
+  <!-- 侧边栏 -->
   <div id="side-bar">
     <h3>🌌 社交引擎控制台</h3>
     <button class="btn-load" id="btn-load">⚡ 载入核心数据集</button>
+
     <div id="timeline-panel" style="display: none; background: rgba(0,0,0,0.4); padding: 12px; border-radius: 8px; margin-top: 10px; margin-bottom: 15px; border: 1px solid rgba(0,255,136,0.2);">
       <div style="font-size: 12px; color: #00ff88; margin-bottom: 8px; text-align: center; font-weight: bold; letter-spacing: 1px;">🌌 宇宙膨胀时间轴</div>
       <div style="display: flex; gap: 10px; align-items: center;">
@@ -41,38 +52,87 @@
     </div>
     <div style="display: flex; gap: 8px; margin-bottom: 8px;">
       <button id="btn-path-bfs" title="以最少的人数触达">🎯 基础追踪 (BFS)</button>
-      <button id="btn-path-dijkstra" title="寻找关系最铁的路径" style="background: linear-gradient(45deg, #aa00ff, #ff00aa);">🧠 亲密路由 (Dijkstra)</button>
+      <button id="btn-path-dijkstra" title="寻找关系最铁的路径" style="background: linear-gradient(45deg, #aa00ff, #ff00aa);">🧠 亲密路由</button>
     </div>
-    <button id="btn-dfs" title="探测围绕此人的信息闭环" style="background: linear-gradient(45deg, #ff4400, #ff8800); margin-bottom: 8px;">🕵️‍♂️ 探测回声室 (DFS)</button>
+    <button id="btn-dfs" title="探测围绕此人的信息闭环" style="background: linear-gradient(45deg, #ff4400, #ff8800); margin-bottom: 8px;">🕵️‍♂️ 探测回声室</button>
+    <button id="btn-dashboard" style="background: linear-gradient(45deg, #00aa88, #00ccff); margin-bottom: 8px;">📊 数据洞察面板</button>
     <button class="btn-reset" id="btn-reset">🌍 恢复全景视角</button>
-    <button class="btn-danger" id="btn-toggle-links">👁️ 隐藏全网连线 (极度流畅)</button>
+    <button class="btn-danger" id="btn-toggle-links">👁️ 隐藏全网连线</button>
 
     <hr style="border:0; border-top:1px solid rgba(255,255,255,0.1); margin: 15px 0;">
 
     <h4 style="color: #00ccff; margin-bottom: 0;">🎛️ 物理力场引擎</h4>
     <div class="slider-group">
-      <label>星系斥力 (Repel): <span id="val-repel">30</span></label>
+      <label>星系斥力: <span id="val-repel">30</span></label>
       <input type="range" id="ctrl-repel" min="0" max="150" value="30">
     </div>
     <div class="slider-group">
-      <label>社交张力 (Link): <span id="val-link">30</span></label>
+      <label>社交张力: <span id="val-link">30</span></label>
       <input type="range" id="ctrl-link" min="10" max="150" value="30">
     </div>
 
     <hr style="border:0; border-top:1px solid rgba(255,255,255,0.1); margin: 15px 0;">
 
-    <h4>👑 影响力排行 (Top 15)</h4>
+    <div style="display:flex; gap:6px; margin-bottom:8px;">
+      <button id="btn-export-json" class="btn-mini-inline">📥 JSON</button>
+      <button id="btn-export-csv" class="btn-mini-inline">📥 CSV</button>
+      <select id="export-datatype" style="flex:1; background:#111; color:#eee; border:1px solid #333; border-radius:4px; padding:4px; font-size:10px;">
+        <option value="pagerank">PageRank</option>
+        <option value="community">Community</option>
+        <option value="betweenness">Betweenness</option>
+        <option value="kcore">K-Core</option>
+        <option value="clustering_coeff">Clustering</option>
+      </select>
+    </div>
+
+    <h4>📊 分析指标切换</h4>
+    <div style="display:flex; gap:6px; margin-bottom:6px;">
+      <select id="ranking-metric" style="flex:1; background:#111; color:#eee; border:1px solid #333; border-radius:4px; padding:4px; font-size:10px;">
+        <option value="pagerank">PageRank 影响力</option>
+        <option value="betweenness">Betweenness 中介</option>
+        <option value="kcore">K-Core 核心度</option>
+        <option value="clustering">聚类系数</option>
+      </select>
+    </div>
     <div id="rank-list">
       <div style="color:#666; text-align:center; margin-top:10px; font-size:12px;">等待载入...</div>
     </div>
   </div>
 
+  <!-- 3D 画布 -->
   <div id="graph"></div>
+
+  <!-- 路径 HUD -->
   <div id="path-hud"></div>
 
-  <script type="module" src="js/app.js"></script>
+  <!-- 统计仪表板 -->
+  <div id="stats-dashboard" style="display:none;">
+    <div class="dash-header">
+      <h3>📊 数据洞察面板</h3>
+      <button id="btn-close-dash">✕</button>
+    </div>
+    <div class="chart-grid">
+      <div class="chart-card"><canvas id="chart-degree"></canvas></div>
+      <div class="chart-card"><canvas id="chart-community"></canvas></div>
+      <div class="chart-card"><canvas id="chart-pagerank-bar"></canvas></div>
+      <div class="chart-card"><canvas id="chart-timing"></canvas></div>
+    </div>
+    <div id="global-stats" style="padding:12px; color:#aaa; font-size:11px; border-top:1px solid rgba(255,255,255,0.1); text-align:center;"></div>
+  </div>
 
+  <!-- 图例面板 -->
+  <div id="legend-panel" style="display:none;">
+    <h4>🗺️ 社区图例</h4>
+    <div id="legend-list"></div>
+  </div>
+
+  <!-- Toast 容器 -->
   <div id="toast-container"></div>
+
+  <!-- 快捷键提示 -->
+  <div id="shortcuts-hint" style="position:fixed; bottom:10px; left:10px; color:#555; font-size:10px; z-index:100;">⌨️ 按 H 显示快捷键</div>
+
+  <script type="module" src="js/app.js"></script>
 </body>
 
 </html>
