@@ -1,0 +1,30 @@
+fastapi>=0.100.0
+uvicorn[standard]>=0.22.0
+pydantic>=2.0.0
+pydantic-settings>=2.0.0
+websockets>=11.0
+httpx>=0.24.0
+pytest>=7.0.0
+pytest-asyncio>=0.21.0
+
+# 关系型数据库
+aiomysql>=0.2.0          # MySQL 异步驱动 (连接池)
+sqlalchemy[asyncio]>=2.0 # ORM (可选, 复杂查询推荐)
+
+# 文档数据库
+motor>=3.4.0             # MongoDB 异步驱动 (基于 PyMongo)
+
+# 缓存
+redis[hiredis]>=5.0.0    # Redis 异步客户端 (hiredis 解析器加速)
+
+# 图数据库
+neo4j>=5.10.0            # Neo4j Python 驱动 (异步)
+
+# 安全认证
+python-jose[cryptography]>=3.3.0  # JWT 创建与验证
+bcrypt>=4.1.0            # 密码 bcrypt 哈希 (cost=12)
+python-multipart>=0.0.6  # 文件上传支持 (OAuth2 表单)
+
+# 可选: 生产环境运维
+# prometheus-client>=0.19.0         # Prometheus 指标暴露
+# structlog>=24.0.0                # 结构化日志 (当前使用自实现 JSONFormatter)

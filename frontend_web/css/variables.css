@@ -1,0 +1,140 @@
+/* ============================================================
+   variables.css — CSS 自定义属性 (Design Tokens)
+   所有颜色、间距、字体、阴影等设计参数集中管理
+   支持亮色/暗色主题切换 (prefers-color-scheme)
+   ============================================================ */
+
+:root {
+  /* ---- 调色板：核心色 ---- */
+  --color-primary:        #00ff88;
+  --color-primary-hover:  #00cc66;
+  --color-primary-dim:    rgba(0, 255, 136, 0.15);
+  --color-secondary:      #0088ff;
+  --color-secondary-hover:#0066cc;
+  --color-accent:         #ffaa00;
+  --color-danger:         #ff0055;
+  --color-danger-hover:   #cc0044;
+  --color-warning:        #ffaa00;
+  --color-info:           #00ccff;
+  --color-purple:         #aa00ff;
+  --color-cyan:           #00ffff;
+
+  /* ---- 调色板：中性色 ---- */
+  --color-bg-primary:     #0a0a1a;
+  --color-bg-secondary:   rgba(15, 15, 30, 0.7);
+  --color-bg-tertiary:    rgba(0, 0, 0, 0.4);
+  --color-bg-elevated:    rgba(10, 15, 30, 0.95);
+  --color-surface:        rgba(15, 20, 35, 0.95);
+  --color-border:         rgba(255, 255, 255, 0.08);
+  --color-border-focus:   rgba(0, 255, 136, 0.3);
+  --color-border-active:  rgba(0, 255, 136, 0.5);
+
+  /* ---- 文字色 ---- */
+  --color-text-primary:   #eee;
+  --color-text-secondary: #aaa;
+  --color-text-muted:     #666;
+  --color-text-accent:    #00ff88;
+  --color-text-on-primary:#fff;
+
+  /* ---- 间距 ---- */
+  --space-xs:   4px;
+  --space-sm:   8px;
+  --space-md:   12px;
+  --space-lg:   16px;
+  --space-xl:   20px;
+  --space-2xl:  32px;
+  --space-3xl:  48px;
+
+  /* ---- 圆角 ---- */
+  --radius-sm:  4px;
+  --radius-md:  6px;
+  --radius-lg:  8px;
+  --radius-xl:  12px;
+  --radius-2xl: 15px;
+  --radius-full: 50%;
+
+  /* ---- 阴影 ---- */
+  --shadow-sm:   0 2px 8px rgba(0, 0, 0, 0.3);
+  --shadow-md:   0 5px 20px rgba(0, 0, 0, 0.5);
+  --shadow-lg:   0 10px 40px rgba(0, 0, 0, 0.8);
+  --shadow-glow-primary: 0 0 15px rgba(0, 255, 136, 0.4);
+  --shadow-glow-secondary: 0 0 15px rgba(0, 153, 255, 0.6);
+  --shadow-glow-danger: 0 0 15px rgba(255, 0, 85, 0.4);
+  --shadow-inset-primary: inset 0 0 20px rgba(0, 255, 136, 0.05);
+  --shadow-inset-gold: inset 0 0 20px rgba(255, 215, 0, 0.05);
+
+  /* ---- 字体 ---- */
+  --font-family-base:     'Segoe UI', Tahoma, system-ui, -apple-system, sans-serif;
+  --font-family-mono:     'Cascadia Code', 'Fira Code', 'Consolas', monospace;
+  --font-size-xs:         10px;
+  --font-size-sm:         12px;
+  --font-size-base:       14px;
+  --font-size-md:         16px;
+  --font-size-lg:         18px;
+  --font-size-xl:         20px;
+  --font-size-2xl:        24px;
+  --font-weight-normal:   400;
+  --font-weight-medium:   500;
+  --font-weight-semibold: 600;
+  --font-weight-bold:     700;
+  --line-height-tight:    1.25;
+  --line-height-normal:   1.5;
+  --letter-spacing-wide:  1px;
+  --letter-spacing-wider: 2px;
+
+  /* ---- 过渡 ---- */
+  --transition-fast:    0.15s ease;
+  --transition-normal:  0.3s ease;
+  --transition-slow:    0.5s ease;
+  --transition-panel:   0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+
+  /* ---- Z-index 层叠 ---- */
+  --z-base:      0;
+  --z-panel:     10001;
+  --z-overlay:   500;
+  --z-modal:     1000;
+  --z-toast:     10000;
+  --z-loading:   9999;
+
+  /* ---- 布局 ---- */
+  --sidebar-width:    320px;
+  --radar-width:      280px;
+  --dashboard-width:  480px;
+  --search-width:     400px;
+  --header-height:    0px;
+
+  /* ---- 画布 ---- */
+  --canvas-bg: radial-gradient(circle at center, #0a0a1a 0%, #000005 100%);
+
+  /* ---- 模糊 ---- */
+  --blur-sm:  10px;
+  --blur-md:  15px;
+  --blur-lg:  20px;
+}
+
+/* ============================================================
+   亮色主题 (prefers-color-scheme: light)
+   ============================================================ */
+@media (prefers-color-scheme: light) {
+  :root {
+    --color-bg-primary:     #f5f5f5;
+    --color-bg-secondary:   rgba(255, 255, 255, 0.85);
+    --color-bg-tertiary:    rgba(0, 0, 0, 0.03);
+    --color-bg-elevated:    rgba(255, 255, 255, 0.97);
+    --color-surface:        rgba(255, 255, 255, 0.97);
+    --color-border:         rgba(0, 0, 0, 0.1);
+    --color-border-focus:   rgba(0, 200, 100, 0.5);
+    --color-border-active:  rgba(0, 200, 100, 0.7);
+
+    --color-text-primary:   #1a1a2e;
+    --color-text-secondary: #555;
+    --color-text-muted:     #999;
+    --color-text-accent:    #008855;
+
+    --shadow-sm:   0 2px 8px rgba(0, 0, 0, 0.08);
+    --shadow-md:   0 5px 20px rgba(0, 0, 0, 0.12);
+    --shadow-lg:   0 10px 40px rgba(0, 0, 0, 0.18);
+
+    --canvas-bg: linear-gradient(135deg, #e8ecf1 0%, #d5dbe3 100%);
+  }
+}

@@ -1,0 +1,32 @@
+# Python
+__pycache__/
+*.pyc
+*.pyo
+
+# 系统
+.DS_Store
+Thumbs.db
+
+# 构建产物
+backend_cpp/build/
+backend_cpp/build_new/
+backend_cpp/cmake-build-debug/
+backend_cpp/cmake-build-release/
+*.exe
+*.pdb
+*.obj
+*.o
+
+# 临时/调试文件
+test_output.txt
+temp_benchmark_*.txt
+temp_graph_output.json
+
+# IDE
+.idea/
+.vscode/
+*.swp
+
+# 环境
+.env
+*.env.local

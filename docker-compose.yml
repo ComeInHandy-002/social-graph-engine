@@ -1,0 +1,121 @@
+version: '3.8'
+
+services:
+  # ==========================================
+  # MySQL 8.0 — 用户账户/Session/配置/API Key
+  # ==========================================
+  mysql:
+    image: mysql:8.0
+    ports:
+      - "3306:3306"
+    environment:
+      - MYSQL_ROOT_PASSWORD=${MYSQL_ROOT_PASSWORD:-rootpassword}
+      - MYSQL_DATABASE=socialgraph
+      - MYSQL_USER=${MYSQL_USER:-socialgraph}
+      - MYSQL_PASSWORD=${MYSQL_PASSWORD:-sgpass123}
+    volumes:
+      - mysql_data:/var/lib/mysql
+      - ./database/mysql/001_init_schema.sql:/docker-entrypoint-initdb.d/001_init_schema.sql:ro
+      - ./database/mysql/002_seed_data.sql:/docker-entrypoint-initdb.d/002_seed_data.sql:ro
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # ==========================================
+  # MongoDB 7.0 — 分析快照/操作日志/性能指标
+  # ==========================================
+  mongodb:
+    image: mongo:7.0
+    ports:
+      - "27017:27017"
+    environment:
+      - MONGO_INITDB_DATABASE=socialgraph_analytics
+      - MONGO_INITDB_ROOT_USERNAME=${MONGO_ROOT_USER:-admin}
+      - MONGO_INITDB_ROOT_PASSWORD=${MONGO_ROOT_PASSWORD:-mongopass}
+    volumes:
+      - mongo_data:/data/db
+      - ./database/mongodb/schema_design.js:/docker-entrypoint-initdb.d/001_schema.js:ro
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "mongosh", "--eval", "db.adminCommand('ping')"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  redis:
+    image: redis:7-alpine
+    ports:
+      - "6379:6379"
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 3s
+      retries: 5
+
+  neo4j:
+    image: neo4j:5-community
+    ports:
+      - "7474:7474"
+      - "7687:7687"
+    environment:
+      - NEO4J_AUTH=${NEO4J_AUTH:-neo4j/password123}
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "cypher-shell", "-u", "neo4j", "-p", "${NEO4J_PASSWORD:-password123}", "RETURN 1"]
+      interval: 15s
+      timeout: 10s
+      retries: 5
+
+  python-middleware:
+    build:
+      context: ./middleware_python
+      dockerfile: Dockerfile
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./middleware_python:/app
+      - ./backend_cpp:/data
+    depends_on:
+      mysql:
+        condition: service_healthy
+      mongodb:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      neo4j:
+        condition: service_healthy
+    environment:
+      - MYSQL_HOST=mysql
+      - MYSQL_PORT=3306
+      - MYSQL_USER=${MYSQL_USER:-socialgraph}
+      - MYSQL_PASSWORD=${MYSQL_PASSWORD:-sgpass123}
+      - MYSQL_DATABASE=socialgraph
+      - MONGODB_URI=mongodb://${MONGO_ROOT_USER:-admin}:${MONGO_ROOT_PASSWORD:-mongopass}@mongodb:27017/
+      - MONGODB_DATABASE=socialgraph_analytics
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+      - NEO4J_URI=bolt://neo4j:7687
+      - NEO4J_USER=${NEO4J_USER:-neo4j}
+      - NEO4J_PASSWORD=${NEO4J_PASSWORD:-password123}
+      - CPP_ENGINE_PATH=/app/../data/cmake-build-release/graph_engine
+      - GRAPH_DATA_PATH=/app/../data/facebook_combined.txt
+    command: uvicorn server:app --host 0.0.0.0 --port 8000
+
+  web-frontend:
+    image: nginx:alpine
+    ports:
+      - "80:80"
+    volumes:
+      - ./frontend_web:/usr/share/nginx/html:ro
+    depends_on:
+      - python-middleware
+
+volumes:
+  mysql_data:
+  mongo_data:
+  redis_data:
+  neo4j_data:

@@ -1,0 +1,256 @@
+// ============================================================================
+// 交付 3: SocialGraph Pro — gRPC 服务定义
+//
+// 推荐 gRPC (非 HTTP/JSON) 的原因:
+//   1. 二进制 protobuf 序列化: 比 JSON 小 3-10x，解析快 5-10x
+//   2. 内置流式传输: server-streaming 天然支持 PageRank/Betweenness 逐批返回
+//   3. 连接复用: HTTP/2 多路复用，单连接承载数百并发请求
+//   4. 强类型契约: .proto 自动生成 C++/Python 桩代码，消除手写序列化错误
+//   5. Deadline 传播: 内置超时和取消机制
+//   6. 生态成熟: 负载均衡、健康检查、反射、拦截器
+//
+// HTTP/JSON 备选方案保留在 TCP 服务器中 (tcp_server.h) 用于:
+//   - 调试: curl 可直接测试
+//   - 向后兼容: 现有 Python asyncio.create_subprocess_exec 路径不受影响
+//   - 低依赖场景: 无需安装 protoc + grpc 工具链
+//
+// 编译此文件:
+//   protoc --cpp_out=../server/ --grpc_out=../server/ --plugin=protoc-gen-grpc=$(which grpc_cpp_plugin) socialgraph.proto
+//   python -m grpc_tools.protoc --python_out=../../middleware_python/services/ --grpc_python_out=../../middleware_python/services/ -I. socialgraph.proto
+// ============================================================================
+
+syntax = "proto3";
+
+package socialgraph;
+
+// ── 服务定义 ─────────────────────────────────────────────────────
+
+service GraphCompute {
+    // 健康检查 (一元调用)
+    rpc Ping (PingRequest) returns (PingResponse);
+
+    // 单次计算 — 返回完整结果 (一元调用)
+    rpc ComputePageRank (PageRankRequest) returns (ScoringResponse);
+    rpc ComputeCommunity (CommunityRequest) returns (CommunityResponse);
+    rpc ComputeConnectedComponents (ConnectedComponentsRequest) returns (ConnectedComponentsResponse);
+    rpc ComputeKCore (KCoreRequest) returns (ScoringResponse);
+    rpc ComputeClusteringCoeff (ClusteringCoeffRequest) returns (ScoringResponse);
+    rpc ComputeGraphStats (GraphStatsRequest) returns (GraphStatsResponse);
+    rpc GetFullGraph (FullGraphRequest) returns (FullGraphResponse);
+    rpc FindPath (PathRequest) returns (PathResponse);
+
+    // 流式计算 — 逐批返回结果 (服务端流式)
+    rpc ComputePageRankStream (PageRankRequest) returns (stream ScoringChunk);
+    rpc ComputeBetweennessStream (BetweennessRequest) returns (stream ScoringChunk);
+    rpc ComputeCommunityStream (CommunityRequest) returns (stream CommunityChunk);
+
+    // Betweenness 计算 (一元调用)
+    rpc ComputeBetweenness (BetweennessRequest) returns (ScoringResponse);
+
+    // 管理命令
+    rpc ReloadGraph (ReloadRequest) returns (ReloadResponse);
+    rpc Shutdown (ShutdownRequest) returns (ShutdownResponse);
+}
+
+// ── 通用消息 ─────────────────────────────────────────────────────
+
+message PingRequest {
+    string client_id = 1;
+}
+
+message PingResponse {
+    string status = 1;         // "pong"
+    int64 node_count = 2;
+    int64 edge_count = 3;
+    int64 uptime_seconds = 4;
+}
+
+// ── PageRank ──────────────────────────────────────────────────────
+
+message PageRankRequest {
+    string request_id = 1;
+    int32 max_iterations = 2;        // 默认 100
+    double damping_factor = 3;       // 默认 0.85
+    double convergence_threshold = 4;// 默认 1e-6,收敛判断
+    int64 deadline_ms = 5;           // 超时(ms)
+}
+
+message ScoreEntry {
+    string node_id = 1;
+    double score = 2;
+}
+
+message ScoringResponse {
+    string request_id = 1;
+    string status = 2;              // "ok" | "error"
+    int64 time_ms = 3;
+    int32 error_code = 4;
+    string error_message = 5;
+    repeated ScoreEntry data = 6;
+    int64 total_nodes = 7;
+}
+
+message ScoringChunk {
+    string request_id = 1;
+    uint32 chunk_index = 2;
+    bool is_last = 3;
+    repeated ScoreEntry data = 4;
+}
+
+// ── Betweenness Centrality ────────────────────────────────────────
+
+message BetweennessRequest {
+    string request_id = 1;
+    double sample_ratio = 2;         // 顶点采样比例, 默认 1.0 (全量)
+    int64 deadline_ms = 3;
+}
+
+// ── LPA 社区发现 ──────────────────────────────────────────────────
+
+message CommunityRequest {
+    string request_id = 1;
+    int32 max_iterations = 2;        // 默认 10
+    int64 deadline_ms = 3;
+}
+
+message CommunityEntry {
+    string node_id = 1;
+    string community_id = 2;
+}
+
+message CommunityResponse {
+    string request_id = 1;
+    string status = 2;
+    int64 time_ms = 3;
+    int32 error_code = 4;
+    string error_message = 5;
+    repeated CommunityEntry data = 6;
+    int32 community_count = 7;
+    int64 total_nodes = 8;
+}
+
+message CommunityChunk {
+    string request_id = 1;
+    uint32 chunk_index = 2;
+    bool is_last = 3;
+    repeated CommunityEntry data = 4;
+}
+
+// ── 连通分量 ─────────────────────────────────────────────────────
+
+message ConnectedComponentsRequest {
+    string request_id = 1;
+    int64 deadline_ms = 2;
+}
+
+message ConnectedComponentsResponse {
+    string request_id = 1;
+    string status = 2;
+    int64 time_ms = 3;
+    int32 error_code = 4;
+    string error_message = 5;
+    repeated CommunityEntry data = 6;
+    int32 component_count = 7;
+    map<string, int32> component_sizes = 8;
+}
+
+// ── K-Core ────────────────────────────────────────────────────────
+
+message KCoreRequest {
+    string request_id = 1;
+    int64 deadline_ms = 2;
+}
+
+// ── 聚类系数 ──────────────────────────────────────────────────────
+
+message ClusteringCoeffRequest {
+    string request_id = 1;
+    int64 deadline_ms = 2;
+}
+
+// ── 图统计 ────────────────────────────────────────────────────────
+
+message GraphStatsRequest {
+    string request_id = 1;
+}
+
+message GraphStatsResponse {
+    string request_id = 1;
+    string status = 2;
+    int64 time_ms = 3;
+    int64 node_count = 4;
+    int64 edge_count = 5;
+    double density = 6;
+    double avg_degree = 7;
+    int32 max_degree = 8;
+    double avg_clustering = 9;
+    int32 component_count = 10;
+    string additional = 11;  // JSON扩展字段
+}
+
+// ── 全网拓扑 ──────────────────────────────────────────────────────
+
+message FullGraphRequest {
+    string request_id = 1;
+    int64 deadline_ms = 2;
+}
+
+message NodeEntry {
+    string id = 1;
+}
+
+message EdgeEntry {
+    string source = 1;
+    string target = 2;
+}
+
+message FullGraphResponse {
+    string request_id = 1;
+    string status = 2;
+    int64 time_ms = 3;
+    repeated NodeEntry nodes = 4;
+    repeated EdgeEntry edges = 5;
+}
+
+// ── 路径查找 ──────────────────────────────────────────────────────
+
+message PathRequest {
+    string request_id = 1;
+    string algorithm = 2;  // "bfs" | "dijkstra" | "dfs"
+    string start_node = 3;
+    string target_node = 4;
+    int64 deadline_ms = 5;
+}
+
+message PathResponse {
+    string request_id = 1;
+    string status = 2;
+    int64 time_ms = 3;
+    int32 error_code = 4;
+    string error_message = 5;
+    repeated string path = 6;
+    int32 path_length = 7;
+}
+
+// ── 管理命令 ──────────────────────────────────────────────────────
+
+message ReloadRequest {
+    string request_id = 1;
+    string data_file_path = 2;   // 可选: 新数据文件路径
+}
+
+message ReloadResponse {
+    string request_id = 1;
+    string status = 2;
+    int64 node_count = 3;
+    int64 edge_count = 4;
+}
+
+message ShutdownRequest {
+    string request_id = 1;
+}
+
+message ShutdownResponse {
+    string request_id = 1;
+    string status = 2;
+}
